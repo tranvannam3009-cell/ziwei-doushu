@@ -1,3 +1,5 @@
+import { VN_PROVINCES } from './cities-vn';
+
 export interface CityInfo {
   name: string;
   longitude: number; // degrees East
@@ -6,6 +8,8 @@ export interface CityInfo {
 export interface ProvinceInfo {
   name: string;
   cities: CityInfo[];
+  /** Múi giờ chuẩn của giờ đồng hồ khi nhập (phút, đông dương). Không có = giờ Bắc Kinh 480. */
+  utcOffsetMinutes?: number;
 }
 
 // ★ 2026-10-07 用户反馈「出生地点还不够全」→ 补全全国区县（直辖市以外 2724 个，挂在各地级市下）。
@@ -699,6 +703,21 @@ export const PROVINCES: ProvinceInfo[] = [
     ],
   },
 
-  // 注：海外出生暂未支持，因 share.ts 真太阳时算法假设输入为北京时间(UTC+8)。
-  // 海外用户请把当地时间换算成北京时间再填写（或填出生时所在的中国时区相对城市）。
 ];
+
+/** Danh sách hiển thị trong form: Việt Nam (UTC+7) trước, Trung Quốc (UTC+8) sau. */
+export const PROVINCE_GROUPS: { label: string; provinces: ProvinceInfo[] }[] = [
+  { label: 'Việt Nam (giờ Việt Nam, UTC+7)', provinces: VN_PROVINCES },
+  { label: 'Trung Quốc (giờ Bắc Kinh, UTC+8)', provinces: PROVINCES },
+];
+
+export const ALL_PROVINCES: ProvinceInfo[] = [...VN_PROVINCES, ...PROVINCES];
+
+export function findProvince(name: string | undefined): ProvinceInfo | undefined {
+  return name ? ALL_PROVINCES.find(p => p.name === name) : undefined;
+}
+
+/** Múi giờ của tỉnh đã chọn; mặc định giờ Bắc Kinh (480) như dữ liệu cũ. */
+export function provinceUtcOffset(name: string | undefined): number | undefined {
+  return findProvince(name)?.utcOffsetMinutes;
+}

@@ -9,13 +9,33 @@ import type { Book, Paragraph, SearchHit } from './types';
 import { guSuiFu } from './data/gusuifu';
 import { ziWeiQuanJi } from './data/quanji';
 import { ziWeiQuanShu } from './data/quanshu';
+import { BOOKS_VI, PARAGRAPH_VI } from './vi';
+
+/** Phủ bản dịch tiếng Việt lên dữ liệu gốc (nguyên văn chữ Hán giữ nguyên trong `text`). */
+function localize(book: Book): Book {
+  const vi = BOOKS_VI[book.slug];
+  if (!vi) return book;
+  return {
+    ...book,
+    title: vi.title,
+    dynasty: vi.dynasty,
+    author: vi.author,
+    intro: vi.intro,
+    chapters: book.chapters.map((ch, i) => ({
+      ...ch,
+      title: vi.chapters[i]?.[0] ?? ch.title,
+      subtitle: vi.chapters[i]?.[1] ?? ch.subtitle,
+      paragraphs: ch.paragraphs.map(p => ({ ...p, translation: p.translation ?? PARAGRAPH_VI[p.id] })),
+    })),
+  };
+}
 
 /** 所有已收录古籍 */
 export const ALL_BOOKS: Book[] = [
   guSuiFu,
   ziWeiQuanJi,
   ziWeiQuanShu,
-];
+].map(localize);
 
 /** 总段落数（用于首页统计） */
 export const TOTAL_PARAGRAPHS = ALL_BOOKS.reduce(
@@ -60,26 +80,39 @@ export function getParagraphById(id: string) {
 export function searchClassics(query: string, limit = 30): SearchHit[] {
   const q = query.trim();
   if (q.length < 1) return [];
+  const qFold = fold(q).folded;
 
   const hits: SearchHit[] = [];
   for (const book of ALL_BOOKS) {
     for (const chapter of book.chapters) {
       for (const p of chapter.paragraphs) {
-        const idx = p.text.indexOf(q);
+        // Tìm trong nguyên văn chữ Hán trước, sau đó trong bản dịch tiếng Việt (không phân biệt hoa thường, dấu).
+        let source = p.text;
+        let idx = p.text.indexOf(q);
+        let len = q.length;
+        if (idx < 0 && p.translation && qFold) {
+          const { folded, map } = fold(p.translation);
+          const fi = folded.indexOf(qFold);
+          if (fi >= 0) {
+            source = p.translation;
+            idx = map[fi];
+            len = (map[fi + qFold.length] ?? p.translation.length) - idx;
+          }
+        }
         if (idx < 0) continue;
 
         // 提取上下文（前后各 40 字）
         const start = Math.max(0, idx - 40);
-        const end = Math.min(p.text.length, idx + q.length + 40);
-        const before = p.text.slice(start, idx);
-        const matched = p.text.slice(idx, idx + q.length);
-        const after = p.text.slice(idx + q.length, end);
+        const end = Math.min(source.length, idx + len + 40);
+        const before = source.slice(start, idx);
+        const matched = source.slice(idx, idx + len);
+        const after = source.slice(idx + len, end);
 
         const snippet = (start > 0 ? '…' : '')
           + escapeHtml(before)
           + `<mark>${escapeHtml(matched)}</mark>`
           + escapeHtml(after)
-          + (end < p.text.length ? '…' : '');
+          + (end < source.length ? '…' : '');
 
         hits.push({
           bookSlug: book.slug,
@@ -95,6 +128,18 @@ export function searchClassics(query: string, limit = 30): SearchHit[] {
     }
   }
   return hits;
+}
+
+/** Bỏ dấu + chữ thường để tìm tiếng Việt; `map[i]` = vị trí trong chuỗi gốc của ký tự thứ i sau khi gấp. */
+function fold(s: string): { folded: string; map: number[] } {
+  let folded = '';
+  const map: number[] = [];
+  for (let i = 0; i < s.length; i++) {
+    const f = s[i].normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').toLowerCase();
+    for (let k = 0; k < f.length; k++) { folded += f[k]; map.push(i); }
+  }
+  map.push(s.length);
+  return { folded, map };
 }
 
 function escapeHtml(s: string): string {

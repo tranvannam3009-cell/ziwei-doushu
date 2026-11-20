@@ -1,12 +1,13 @@
 import type { BirthFormState } from '@/components/BirthForm';
 import type { BirthInfo } from './types';
 import { calculateTrueSolarTime, resolveZiweiDayOffset, shiftGregorianDate } from './true-solar-time';
+import { provinceUtcOffset } from './cities';
 
 function isValidLongitude(longitude: number): boolean {
   return longitude >= -180 && longitude <= 180;
 }
 
-/** 表单预览和提交共用：北京时间 + 经度修正 + 出生日期对应的均时差。 */
+/** 表单预览和提交共用：钟表时间（按出生省份的时区：越南 UTC+7，中国 UTC+8）+ 经度修正 + 均时差。 */
 export function formToTrueSolarTime(form: Pick<BirthFormState, 'year' | 'month' | 'day' | 'clockHour' | 'clockMinute' | 'province' | 'longitude'>) {
   return calculateTrueSolarTime({
     year: parseInt(form.year) || 0,
@@ -15,6 +16,7 @@ export function formToTrueSolarTime(form: Pick<BirthFormState, 'year' | 'month' 
     clockHour: parseInt(form.clockHour) || 0,
     clockMinute: parseInt(form.clockMinute) || 0,
     longitude: form.province ? form.longitude : undefined,
+    utcOffsetMinutes: provinceUtcOffset(form.province),
   });
 }
 

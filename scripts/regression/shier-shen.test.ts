@@ -1,5 +1,6 @@
 /** Regression coverage for 岁前/将前/博士十二神的公式与展示层渲染。 */
 import assert from 'node:assert/strict';
+import { viName } from '../../lib/i18n/vi';
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import ChartBoard from '../../components/ChartBoard';
@@ -68,9 +69,9 @@ for (const palace of chart.palaces) {
   };
   const html = renderToStaticMarkup(React.createElement(PalaceCell, { palace, shierShen }));
   assert.match(html, new RegExp(
-    `data-shier-shen="boshi"[^>]*>${shierShen.boshi}</span>` +
-    `<span data-shier-shen="jiangQian">${shierShen.jiangQian}</span>` +
-    `<span data-shier-shen="suiQian">${shierShen.suiQian}</span>`,
+    `data-shier-shen="boshi"[^>]*>${viName(shierShen.boshi)}</span>` +
+    `<span data-shier-shen="jiangQian">${viName(shierShen.jiangQian)}</span>` +
+    `<span data-shier-shen="suiQian">${viName(shierShen.suiQian)}</span>`,
   ), `${BRANCHES[palace.branch]}宫应按博士、将前、岁前竖排渲染`);
   suiNames.add(shierShen.suiQian);
   jiangNames.add(shierShen.jiangQian);
@@ -90,7 +91,7 @@ assert.equal(boshiShenName(chart.lunarInfo.yearStem, 'male', 6), '伏兵', '庚�
 
 // ChartBoard 必须在展示层把同一组本命数据传给 PalaceCell，而不是依赖 Palace 新字段。
 const boardHtml = renderToStaticMarkup(React.createElement(ChartBoard, { chart }));
-assert.match(boardHtml, /data-shier-shen="boshi"[^>]*>伏兵<\/span><span data-shier-shen="jiangQian">将星<\/span><span data-shier-shen="suiQian">岁建<\/span>/,
+assert.match(boardHtml, /data-shier-shen="boshi"[^>]*>Phục Binh<\/span><span data-shier-shen="jiangQian">Tướng Tinh<\/span><span data-shier-shen="suiQian">Tuế Kiến<\/span>/,
   'ChartBoard 应在午宫依次渲染伏兵、将星、岁建');
 
 // 阴女顺行：1991-05-15 午时女，辛未年（年干辛=7，年支未=7），禄存在酉。
@@ -106,6 +107,6 @@ assert.equal(shierShenF.boshi, '博士', '辛年禄存在酉，阴女酉宫应�
 assert.equal(boshiShenName(chartF.lunarInfo.yearStem, 'female', 10), '力士', '辛年阴女顺行，戌宫应为力士');
 assert.equal(suiQianShenName(chartF.lunarInfo.yearBranch, 7), '岁建', '未年未宫应为岁建');
 const htmlF = renderToStaticMarkup(React.createElement(PalaceCell, { palace: palaceF, shierShen: shierShenF }));
-assert.match(htmlF, /data-shier-shen="boshi"[^>]*>博士<\/span>/, '阴女命盘酉宫应渲染博士');
+assert.match(htmlF, /data-shier-shen="boshi"[^>]*>Bác Sĩ<\/span>/, '阴女命盘酉宫应渲染博士');
 
 console.log('✓ 岁前/将前/博士十二神公式单元 + 展示层渲染回归通过');

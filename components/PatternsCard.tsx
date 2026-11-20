@@ -4,8 +4,8 @@ import type { ZiweiChart } from '@/lib/ziwei/types';
 import { detectPatterns } from '@/lib/ziwei/patterns';
 
 const LevelStyle = {
-  excellent: { dot: 'bg-amber-400', label: 'text-amber-500', badge: 'text-amber-500 bg-amber-500/10 border-amber-500/25' },
-  good:      { dot: 'bg-sky-400',   label: 'text-sky-500',   badge: 'text-sky-500 bg-sky-500/10 border-sky-500/25' },
+  excellent: { dot: 'bg-[#B5482F]', label: 'text-[#B5482F]', badge: 'text-[#B5482F] bg-[#B5482F]/10 border-[#B5482F]/25' },
+  good:      { dot: 'bg-[#2F5C8F]',   label: 'text-[#2F5C8F]',   badge: 'text-[#2F5C8F] bg-[#2F5C8F]/10 border-[#2F5C8F]/25' },
   neutral:   { dot: 'bg-slate-400', label: 'text-slate-400', badge: 'text-slate-400 bg-slate-500/10 border-slate-500/20' },
   caution:   { dot: 'bg-orange-500', label: 'text-orange-500', badge: 'text-orange-500 bg-orange-500/10 border-orange-500/25' },
 };
@@ -64,7 +64,7 @@ export default function PatternsCard({ chart }: { chart: ZiweiChart }) {
                   )}
                   {p.conditions.bonus && p.conditions.bonus.length > 0 && (
                     <div className="text-[9px] leading-relaxed" style={{ color: 'var(--t-text2)', opacity: 0.85 }}>
-                      <span className="font-medium text-emerald-500">加分</span>
+                      <span className="font-medium text-[#3F7A52]">加分</span>
                       <span style={{ opacity: 0.6 }}> · </span>
                       {p.conditions.bonus.join('、')}
                     </div>
