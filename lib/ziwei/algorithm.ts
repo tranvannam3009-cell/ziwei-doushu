@@ -10,6 +10,7 @@ import { BRANCHES, STEMS } from './constants';
 import { schoolStarBrightness, type BrightnessSchool } from './school-data';
 import { SCHOOL_AX } from './school-tables.generated';
 import { DEFAULT_LEAP_MONTH } from './school-config';
+import { solarToLunar } from './vn-lunar';
 // 飞星派工具仅供导出，不再在排盘时调用（倪师《天纪 03》：四化星永远固定不动）
 // import { detectSelfSihua, getSiHuaByStem } from './sihua';
 
@@ -199,6 +200,98 @@ export function resolveEffectiveLunarDate(
     isLeapMonth,
     rawLunarMonth,
     rawLunarDay,
+  };
+}
+
+// ─── Âm lịch Việt Nam (UTC+7) ─────────────────────────────────────
+// iztro và lunar-javascript luôn đổi ngày theo âm lịch Trung Quốc (UTC+8). Từ 1968 khoảng 3,9% số ngày
+// có ngày/tháng/năm âm khác lịch Việt Nam (vd 21/1/1985: VN mùng 1 Tết Ất Sửu, TQ mới mùng 1 tháng Chạp Giáp Tý).
+// calendar = 'vn': lấy ngày âm theo lịch Việt Nam rồi lập lá số bằng astro.byLunar.
+export type ChartCalendar = 'cn' | 'vn';
+
+/** Lịch mặc định: đặt NEXT_PUBLIC_ZIWEI_CALENDAR=vn trong .env.local để app dùng âm lịch Việt Nam. */
+export const DEFAULT_CALENDAR: ChartCalendar =
+  process.env.NEXT_PUBLIC_ZIWEI_CALENDAR === 'vn' ? 'vn' : 'cn';
+
+export interface EffectiveVnLunarDate extends EffectiveLunarDate {
+  /** Năm âm lịch gốc (chưa áp quy tắc tháng nhuận) — dùng cho can chi năm. */
+  rawLunarYear: number;
+  /** true khi ngày 30 âm VN bị kẹp về ngày cuối tháng vì tháng đó bên lịch TQ chỉ có 29 ngày. */
+  dayClamped: boolean;
+  /** true khi tháng nhuận VN không phải tháng nhuận ở lịch TQ nên 'origin-month' phải quy về tháng thường. */
+  leapUnsupported: boolean;
+}
+
+/**
+ * Như resolveEffectiveLunarDate nhưng theo âm lịch Việt Nam.
+ * Kết quả luôn là một ngày âm tồn tại trong lịch TQ để truyền được cho astro.byLunar.
+ */
+export function resolveEffectiveVnLunarDate(
+  year: number,
+  month: number,
+  day: number,
+  policy: LunarMonthPolicy = 'prev-month',
+): EffectiveVnLunarDate {
+  if (policy !== 'split' && policy !== 'next-month' && policy !== 'prev-month' && policy !== 'origin-month') {
+    throw new RangeError(
+      `leapMonth policy must be one of 'split' | 'next-month' | 'prev-month' | 'origin-month'; received ${String(policy)}`,
+    );
+  }
+  const vn = solarToLunar(day, month, year);
+  let lunarYear = vn.year;
+  let lunarMonth = vn.month;
+  let isLeapMonth = false;
+  let leapUnsupported = false;
+
+  if (vn.isLeap) {
+    if (policy === 'split') {
+      if (vn.day > 15) lunarMonth += 1;
+    } else if (policy === 'next-month') {
+      lunarMonth += 1;
+    } else if (policy === 'origin-month') {
+      isLeapMonth = true;
+    }
+    if (lunarMonth > 12) {
+      lunarMonth = 1;
+      lunarYear += 1;
+    }
+  }
+
+  // Tháng nhuận VN có khi không phải tháng nhuận ở lịch TQ (vd 1995 VN nhuận tháng 8): khi đó byLunar
+  // không có tháng nhuận để dựng, quy về tháng thường cùng số (giống 'prev-month').
+  if (isLeapMonth) {
+    try {
+      const leapCount = LunarMonth.fromYm(lunarYear, -lunarMonth)?.getDayCount?.();
+      if (!(typeof leapCount === 'number' && leapCount > 0)) throw new Error('no leap');
+    } catch {
+      isLeapMonth = false;
+      leapUnsupported = true;
+    }
+  }
+
+  // Ngày 30 âm VN rơi vào tháng mà lịch TQ chỉ có 29 ngày (21 ngày trong 1968–2026): kẹp về ngày cuối tháng,
+  // cùng cách resolveEffectiveLunarDate đang làm với tháng nhuận. Lá số các ngày này cần kiểm tra tay.
+  let lunarDay = vn.day;
+  let dayClamped = false;
+  try {
+    const monthKey = isLeapMonth ? -lunarMonth : lunarMonth;
+    const dayCount = LunarMonth.fromYm(lunarYear, monthKey)?.getDayCount?.();
+    if (typeof dayCount === 'number' && dayCount > 0 && lunarDay > dayCount) {
+      lunarDay = dayCount;
+      dayClamped = true;
+    }
+  } catch { /* giữ nguyên ngày */ }
+
+  return {
+    lunarYear,
+    lunarMonth,
+    lunarDay,
+    isLeapMonth,
+    rawLunarMonth: vn.isLeap ? -vn.month : vn.month,
+    rawLunarDay: vn.day,
+    rawLunarYear: vn.year,
+    dayClamped,
+    leapUnsupported,
   };
 }
 
@@ -452,9 +545,13 @@ function applySchoolFuxun(palaces: Palace[]): void {
 
 export function generateChart(
   birthInfo: BirthInfo,
-  opts?: { leapMonth?: LunarMonthPolicy },
+  opts?: { leapMonth?: LunarMonthPolicy; calendar?: ChartCalendar },
 ): ZiweiChart {
   const { year, month, day, hour, gender } = birthInfo;
+  const calendar: ChartCalendar = opts?.calendar ?? DEFAULT_CALENDAR;
+  if (calendar !== 'cn' && calendar !== 'vn') {
+    throw new RangeError(`calendar must be 'cn' or 'vn'; received ${String(calendar)}`);
+  }
   if (!Number.isInteger(hour) || hour < 0 || hour > 11) {
     throw new RangeError(`hour must be an integer branch index from 0 to 11; received ${hour}`);
   }
@@ -482,8 +579,24 @@ export function generateChart(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let astrolabe: any;
+  let vnLunar: EffectiveVnLunarDate | undefined;
 
-  if (leapMode !== 'split' && effectiveLunar.rawLunarMonth < 0) {
+  if (calendar === 'vn') {
+    // Âm lịch Việt Nam: byLunar đổi ngày âm này sang ngày dương có cùng ngày âm ở lịch TQ rồi lập lá số,
+    // nên phần lá số (theo năm/tháng/ngày âm + giờ) đúng theo lịch VN. Đã tự áp quy tắc tháng nhuận ở trên.
+    vnLunar = resolveEffectiveVnLunarDate(year, month, day, leapMode);
+    if (vnLunar.dayClamped || vnLunar.leapUnsupported) {
+      console.warn('[ziwei] vn calendar edge case, chart needs manual check', { year, month, day, vnLunar });
+    }
+    astrolabe = astro.byLunar(
+      `${vnLunar.lunarYear}-${vnLunar.lunarMonth}-${vnLunar.lunarDay}`,
+      hour,
+      iztroGender,
+      vnLunar.isLeapMonth,
+      false,
+      'zh-CN',
+    );
+  } else if (leapMode !== 'split' && effectiveLunar.rawLunarMonth < 0) {
       // 闰月生人 → 按用户选项切换月份归属
       const lunarDateStr = `${effectiveLunar.lunarYear}-${effectiveLunar.lunarMonth}-${effectiveLunar.lunarDay}`;
       astrolabe = astro.byLunar(
@@ -503,7 +616,8 @@ export function generateChart(
   const chartBirthInfo = {
     ...birthInfo,
     leapMonthPolicy: leapMode,
-  } as BirthInfo & { leapMonthPolicy: LunarMonthPolicy };
+    calendar,
+  } as BirthInfo & { leapMonthPolicy: LunarMonthPolicy; calendar: ChartCalendar };
 
   // ── 组装十二宫 ──
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -645,7 +759,33 @@ export function generateChart(
   );
 
   // ── 农历信息（含节气四柱）──
-  const lunarInfo = getLunarInfo(year, month, day, hour, leapMode);
+  let lunarInfo = getLunarInfo(year, month, day, hour, leapMode);
+  if (vnLunar) {
+    // Thay phần âm lịch bằng lịch VN; tứ trụ tiết khí (fourPillars) giữ nguyên vì tính theo ngày dương thật.
+    const yearStem = (((vnLunar.rawLunarYear - 4) % 10) + 10) % 10;
+    const yearBranch = (((vnLunar.rawLunarYear - 4) % 12) + 12) % 12;
+    let fourPillarsLunar = lunarInfo.fourPillarsLunar;
+    if (fourPillarsLunar) {
+      const absM = vnLunar.lunarMonth;
+      const monthStemIdx = (((yearStem % 5) * 2 + 2) % 10 + (absM - 1)) % 10;
+      fourPillarsLunar = [
+        `${STEMS[yearStem]}${BRANCHES[yearBranch]}`,
+        `${STEMS[monthStemIdx]}${BRANCHES[(absM + 1) % 12]}`,
+        fourPillarsLunar[2],
+        fourPillarsLunar[3],
+      ];
+    }
+    lunarInfo = {
+      ...lunarInfo,
+      lunarYear: vnLunar.lunarYear,
+      lunarMonth: vnLunar.lunarMonth,
+      lunarDay: vnLunar.lunarDay,
+      isLeapMonth: vnLunar.isLeapMonth,
+      yearStem,
+      yearBranch,
+      fourPillarsLunar,
+    };
+  }
 
   // ★ 2026-08-14 金标准盘核对：截空/副截阴干对调 + 年支大耗 + 旬空成对副旬
   applySchoolJiekong(palaces, lunarInfo.yearStem);
