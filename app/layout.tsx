@@ -4,11 +4,12 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { SITE_URL } from '@/lib/site';
-import { Noto_Serif } from 'next/font/google';
+import { Alegreya } from 'next/font/google';
 
-const serif = Noto_Serif({
+const serif = Alegreya({
   subsets: ['latin', 'vietnamese'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
   display: 'swap',
   variable: '--font-serif',
 });
