@@ -4,7 +4,7 @@
 // Cần GEMINI_API_KEY (Google Gemini) hoặc ANTHROPIC_API_KEY (Claude) — chọn bằng AI_PROVIDER, xem .env.example.
 
 import Anthropic from '@anthropic-ai/sdk';
-import { viName } from '@/lib/i18n/vi';
+import { viName, stemVi, branchVi } from '@/lib/i18n/vi';
 
 export const runtime = 'nodejs';
 
@@ -21,6 +21,24 @@ Quy tắc:
 - Chỗ nào các trường phái khác nhau hoặc lá số không đủ thông tin, nói thẳng là không chắc.
 - Không đưa lời khuyên y tế, pháp lý, tài chính hay quyết định hôn nhân; nhắc người dùng đây là tham khảo văn hóa, giải trí.
 - Trả lời ngắn gọn, dễ hiểu với người không biết Tử Vi.`;
+
+/**
+ * Mốc thời gian hiện tại (giờ Việt Nam) để model không tự đoán "năm nay" theo dữ liệu huấn luyện.
+ * Can chi năm tính theo dương lịch; trước Tết thì năm âm lịch vẫn là năm trước — ghi rõ để model tự xét.
+ */
+function dateContext(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(now);
+  const get = (t: string) => Number(parts.find((x) => x.type === t)?.value);
+  const y = get('year'), m = get('month'), d = get('day');
+  const canChi = (yr: number) => `${stemVi(yr - 4)} ${branchVi(yr - 4)}`;
+  return [
+    `Hôm nay là ngày ${d}/${m}/${y} (giờ Việt Nam). "Năm nay" là năm ${y} — năm ${canChi(y)}; năm sau ${y + 1} là năm ${canChi(y + 1)}.`,
+    `Năm âm lịch ${canChi(y)} bắt đầu từ Tết Nguyên Đán ${y}; trước Tết vẫn tính là năm ${canChi(y - 1)}.`,
+    'Khi luận Lưu Niên, tuổi hay "năm nay/năm tới", luôn tính theo mốc này, không dùng năm nào khác.',
+  ].join('\n');
+}
 
 const MAX_TURNS = 20;
 
@@ -110,7 +128,7 @@ async function askGemini(history: Turn[], chartText: string): Promise<Response> 
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY!.trim() },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM }, { text: chartText }] },
+        systemInstruction: { parts: [{ text: SYSTEM }, { text: dateContext() }, { text: chartText }] },
         contents: history.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
         // Model Gemini tính cả token "suy nghĩ" vào giới hạn này, nên để rộng để câu trả lời không bị cắt.
         generationConfig: { maxOutputTokens: 8192, temperature: 0.7 },
@@ -187,6 +205,7 @@ async function askClaude(history: Turn[], chartText: string): Promise<Response> 
       max_tokens: 2000,
       system: [
         { type: 'text', text: SYSTEM },
+        { type: 'text', text: dateContext() },
         // Lá số đặt trong system để mọi lượt hỏi đều thấy; có thể bật prompt caching cho khối này
         { type: 'text', text: chartText },
       ],
