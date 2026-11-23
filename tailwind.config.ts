@@ -11,21 +11,21 @@ const config: Config = {
       colors: {
         // 2.0 设计系统色
         bg: {
-          0: "#FAFAF9",
-          1: "#F4F3EF",
-          2: "#ECEAE4",
-          inv: "#0D0D0B",
+          0: "#F3EEE5",
+          1: "#EDE6DA",
+          2: "#E4DCCD",
+          inv: "#1F1C18",
         },
         tx: {
-          0: "#0D0D0B",
-          1: "#1A1A18",
-          2: "#4A4A45",
-          3: "#8A8A82",
+          0: "#1F1C18",
+          1: "#2E2A25",
+          2: "#5A534A",
+          3: "#8C8478",
           inv: "#F0EDE8",
         },
         ac: {
-          DEFAULT: "#B8922A",
-          dim: "#7A5F1A",
+          DEFAULT: "#A0814F",
+          dim: "#7A6038",
         },
         // 四化语义色
         lu:   "#2D7A4A",
@@ -35,6 +35,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font)"],
+        serif: ["var(--font)"],
         mono: ["var(--font-mono)"],
       },
       boxShadow: {

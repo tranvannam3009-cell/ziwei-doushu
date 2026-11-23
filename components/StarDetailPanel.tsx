@@ -163,17 +163,17 @@ const STAR_DETAIL: Record<string, {
 };
 
 const levelConfig = {
-  major: { label: '主星', color: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
-  lucky: { label: '吉星', color: 'text-sky-400 border-sky-500/30 bg-sky-500/10' },
-  sha:   { label: '煞星', color: 'text-red-400 border-red-500/30 bg-red-500/10' },
+  major: { label: '主星', color: 'text-[#B5482F] border-[#B5482F]/30 bg-[#B5482F]/10' },
+  lucky: { label: '吉星', color: 'text-[#2F5C8F] border-[#2F5C8F]/30 bg-[#2F5C8F]/10' },
+  sha:   { label: '煞星', color: 'text-[#A83A2C] border-[#A83A2C]/30 bg-[#A83A2C]/10' },
   minor: { label: '杂星', color: 'text-slate-400 border-slate-500/25 bg-slate-500/10' },
 };
 
 const siHuaColors: Record<string, string> = {
-  '禄': 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-  '权': 'text-blue-400 bg-blue-500/10 border-blue-500/30',
-  '科': 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
-  '忌': 'text-red-400 bg-red-500/10 border-red-500/30',
+  '禄': 'text-[#3F7A52] bg-[#3F7A52]/10 border-[#3F7A52]/30',
+  '权': 'text-[#2F5C8F] bg-[#2F5C8F]/10 border-[#2F5C8F]/30',
+  '科': 'text-[#8A7018] bg-[#8A7018]/10 border-[#8A7018]/30',
+  '忌': 'text-[#A83A2C] bg-[#A83A2C]/10 border-[#A83A2C]/30',
 };
 
 export default function StarDetailPanel({ star, palaceName, onClose }: StarDetailPanelProps) {
@@ -286,12 +286,12 @@ export default function StarDetailPanel({ star, palaceName, onClose }: StarDetai
 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="text-[10px] p-2.5 rounded-lg" style={{ border: '1px solid rgba(74,222,128,0.15)', background: 'rgba(74,222,128,0.05)' }}>
-                    <div className="text-emerald-500 mb-0.5 font-medium">最佳宫位</div>
-                    <div className="text-emerald-500/70">{detail.bestPalace}</div>
+                    <div className="text-[#3F7A52] mb-0.5 font-medium">最佳宫位</div>
+                    <div className="text-[#3F7A52]/70">{detail.bestPalace}</div>
                   </div>
                   <div className="text-[10px] p-2.5 rounded-lg" style={{ border: '1px solid rgba(248,113,113,0.15)', background: 'rgba(248,113,113,0.05)' }}>
-                    <div className="text-red-500 mb-0.5 font-medium">注意宫位</div>
-                    <div className="text-red-500/70">{detail.worstPalace}</div>
+                    <div className="text-[#A83A2C] mb-0.5 font-medium">注意宫位</div>
+                    <div className="text-[#A83A2C]/70">{detail.worstPalace}</div>
                   </div>
                 </div>
               </>

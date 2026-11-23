@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion';
 import { STEMS, SI_HUA_TABLE } from '@/lib/ziwei/constants';
 import type { ZiweiChart } from '@/lib/ziwei/types';
+import { viName, SIHUA_VI, stemVi } from '@/lib/i18n/vi';
 
 export type TimeView = 'mingpan' | 'daxian' | 'liunian';
 
@@ -55,7 +56,7 @@ export default function TimeNav({
       if (!dxPalace) return null;
       const stemIndex = dxPalace.stem;
       return {
-        stemName: STEMS[stemIndex],
+        stemName: stemVi(stemIndex),
         overlay: buildSiHuaOverlay(stemIndex),
       };
     }
@@ -63,7 +64,7 @@ export default function TimeNav({
     if (view === 'liunian') {
       const stemIndex = getYearStemIndex(liunianYear);
       return {
-        stemName: STEMS[stemIndex],
+        stemName: stemVi(stemIndex),
         overlay: buildSiHuaOverlay(stemIndex),
       };
     }
@@ -85,7 +86,7 @@ export default function TimeNav({
           active={view === 'mingpan'}
           onClick={() => onViewChange('mingpan')}
         >
-          本命
+          Bản mệnh
         </TabButton>
 
         {/* 大限 */}
@@ -93,7 +94,7 @@ export default function TimeNav({
           active={view === 'daxian'}
           onClick={() => onViewChange('daxian')}
         >
-          {currentDx ? `大限 ${currentDx.startAge}–${currentDx.endAge}` : '大限'}
+          {currentDx ? `Đại Hạn ${currentDx.startAge}–${currentDx.endAge}` : 'Đại Hạn'}
         </TabButton>
 
         {/* 流年 — 含年份切换 */}
@@ -101,10 +102,10 @@ export default function TimeNav({
           className="relative flex-1 flex items-center justify-center rounded-lg py-1.5 gap-1 transition-all duration-200"
           style={{
             background: view === 'liunian'
-              ? 'rgba(212,168,67,0.12)'
+              ? 'rgba(160,129,79,0.12)'
               : 'transparent',
             border: view === 'liunian'
-              ? '1px solid rgba(212,168,67,0.25)'
+              ? '1px solid rgba(160,129,79,0.25)'
               : '1px solid transparent',
           }}
         >
@@ -113,7 +114,7 @@ export default function TimeNav({
             className="text-[10px] font-medium flex-1 text-center"
             style={{ color: view === 'liunian' ? 'var(--t-gold)' : 'var(--t-faint)' }}
           >
-            流年
+            Lưu Niên
           </button>
           {/* 年份 +/- */}
           <div className="flex items-center gap-0.5">
@@ -151,14 +152,14 @@ export default function TimeNav({
           className="flex items-center gap-2 mt-1.5 px-1 flex-wrap"
         >
           <span className="text-[9px]" style={{ color: 'var(--t-faint)' }}>
-            {view === 'daxian' ? '大限' : `${liunianYear}`}·{overlayInfo.stemName}年四化：
+            {view === 'daxian' ? 'Đại Hạn' : `Năm ${liunianYear}`} · Tứ Hóa can {overlayInfo.stemName}:
           </span>
           {(['禄', '权', '科', '忌'] as const).map(sh => {
             const starName = Object.keys(overlayInfo.overlay).find(k => overlayInfo.overlay[k] === sh);
             if (!starName) return null;
             return (
               <span key={sh} className="text-[9px] font-medium" style={{ color: SIHUA_COLORS[sh] }}>
-                {starName}化{sh}
+                {viName(starName)} Hóa {SIHUA_VI[sh]}
               </span>
             );
           })}
@@ -182,9 +183,9 @@ function TabButton({
       onClick={onClick}
       className="flex-1 py-1.5 text-[10px] font-medium rounded-lg transition-all duration-200"
       style={{
-        background: active ? 'rgba(212,168,67,0.12)' : 'transparent',
+        background: active ? 'rgba(160,129,79,0.12)' : 'transparent',
         color: active ? 'var(--t-gold)' : 'var(--t-faint)',
-        border: active ? '1px solid rgba(212,168,67,0.25)' : '1px solid transparent',
+        border: active ? '1px solid rgba(160,129,79,0.25)' : '1px solid transparent',
       }}
     >
       {children}

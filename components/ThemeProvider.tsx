@@ -8,12 +8,9 @@ const ThemeContext = createContext<{
   toggle: () => void;
 }>({ theme: 'dark', toggle: () => {} });
 
+// Giao diện "giấy mực" chỉ có một tông sáng; giữ API theme để các component cũ không phải đổi.
 function getInitialTheme(): Theme {
-  if (typeof document !== 'undefined') {
-    const attr = document.documentElement.getAttribute('data-theme');
-    if (attr === 'light' || attr === 'dark') return attr;
-  }
-  return 'dark';
+  return 'light';
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -22,8 +19,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem('ziwei-theme') as Theme | null;
-    if (saved === 'light' || saved === 'dark') setTheme(saved);
   }, []);
 
   useEffect(() => {
@@ -36,7 +31,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggle = () => {
     const root = document.documentElement;
     root.classList.add('theme-transitioning');
-    setTheme(t => t === 'dark' ? 'light' : 'dark');
+    setTheme('light');
     setTimeout(() => root.classList.remove('theme-transitioning'), 420);
   };
 
